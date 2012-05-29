@@ -1,0 +1,174 @@
+1
+True
+
+2
+False
+
+3
+True
+
+4
+SELECT 
+  ROUND(MAX(sal)) AS "Maximum", 
+  ROUND(MIN(sal)) AS "Minimum", 
+  ROUND(SUM(sal)) AS "Sum", 
+  ROUND(AVG(sal)) AS "Average"
+FROM
+  emp;
+
+5
+SELECT 
+  job,
+  ROUND(MAX(sal)) AS "Maximum", 
+  ROUND(MIN(sal)) AS "Minimum", 
+  ROUND(SUM(sal)) AS "Sum", 
+  ROUND(AVG(sal)) AS "Average"
+FROM
+  emp
+GROUP BY
+  job;
+
+6
+SELECT 
+  job,
+  COUNT(*)
+FROM
+  emp
+GROUP BY
+  job;
+
+7
+SELECT
+  COUNT(*) AS "Number of managers"
+FROM
+  emp
+WHERE
+  job = 'MANAGER';
+
+8
+SELECT
+  MAX(sal) - MIN(sal) AS difference
+FROM
+  emp;
+
+9
+SELECT
+  m.empno AS mgr, 
+  MIN(e.sal) AS "MIN(SAL)"
+FROM
+  emp e,
+  emp m
+WHERE
+  e.mgr = m.empno
+GROUP BY
+  m.empno
+HAVING
+  MIN(e.sal) >= 1000
+ORDER BY
+  MIN(e.sal) DESC;
+
+10
+SELECT
+  d.dname,
+  d.loc,
+  COUNT(*) AS "Number of people",
+  ROUND(AVG(e.sal), 2) AS "Salary"
+FROM
+  dept d, 
+  emp e
+WHERE
+  e.deptno = d.deptno
+GROUP BY
+  d.dname,
+  d.loc;
+
+11
+SELECT
+  COUNT(*) AS total,
+  SUM(DECODE(TO_CHAR(hiredate, 'YYYY'), '1980', 1, 0)) AS "1980",
+  SUM(DECODE(TO_CHAR(hiredate, 'YYYY'), '1981', 1, 0)) AS "1981",
+  SUM(DECODE(TO_CHAR(hiredate, 'YYYY'), '1982', 1, 0)) AS "1982",
+  SUM(DECODE(TO_CHAR(hiredate, 'YYYY'), '1983', 1, 0)) AS "1983"
+FROM
+  emp;
+
+12
+SELECT
+  e.job as "Job",
+  SUM(DECODE(e.deptno, 10, e.sal, NULL)) as "Dept 10",
+  SUM(DECODE(e.deptno, 20, e.sal, NULL)) as "Dept 20",
+  SUM(DECODE(e.deptno, 30, e.sal, NULL)) as "Dept 30",
+  SUM(e.sal) as "Total"
+FROM
+  emp e
+GROUP BY
+  e.job;
+
+1
+SELECT 
+  p.codp,
+  p.den
+FROM
+  produse p, 
+  vanzari v, 
+  sectii s
+WHERE
+  v.codp = p.codp AND
+  v.cods = s.cods AND
+  s.etaj = 2
+GROUP BY
+  p.codp,
+  p.den
+HAVING
+  COUNT(DISTINCT s.cods) >= 2;
+
+2
+SELECT
+  s.den,
+  s.cods,
+  NVL(SUM(v.cant * p.pret), 0) as "Total"
+FROM
+  sectii s, vanzari v, produse p
+WHERE
+  v.cods(+) = s.cods AND
+  v.codp = p.codp(+)
+GROUP BY
+  s.cods,
+  s.den;
+
+3
+SELECT
+  s.den
+FROM
+  sectii s, vanzari v, produse p
+WHERE
+  v.cods = s.cods AND
+  v.codp = p.codp AND
+  p.cul = 'rosu'
+GROUP BY
+  s.cods,
+  s.den
+HAVING
+  COUNT(DISTINCT p.tip) >= 2;
+
+4
+SELECT
+  f.cod
+FROM
+  (SELECT
+     p.codp AS cod
+   FROM
+     produse p, vanzari v, sectii s
+   WHERE
+     v.codp = p.codp AND
+     v.cods = s.cods AND
+     s.etaj = 2
+   GROUP BY
+     p.codp,
+     s.cods
+   HAVING
+     SUM(v.cant) >= 10) f
+GROUP BY
+  f.cod
+HAVING
+  COUNT(*) >= 2;

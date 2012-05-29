@@ -1,0 +1,149 @@
+1
+select 
+  e.ename, 
+  e.deptno, 
+  d.dname 
+from 
+  emp e, 
+  dept d 
+where 
+  e.deptno = d.deptno;
+
+2
+select 
+  distinct e.job, 
+  d.loc 
+from 
+  emp e, 
+  dept d 
+where 
+  e.deptno = d.deptno and 
+  d.deptno = 30;
+
+3
+select 
+  e.ename, 
+  d.dname, 
+  d.loc 
+from 
+  emp e, 
+  dept d 
+where 
+  e.deptno = d.deptno and 
+  e.comm is not null;
+
+4
+select 
+  e.ename, 
+  d.dname 
+from
+  emp e, 
+  dept d 
+where 
+  e.deptno = d.deptno and
+  e.ename like '%A%';
+
+5
+select 
+  e.ename, 
+  e.job, 
+  d.deptno, 
+  d.dname 
+from 
+  emp e, 
+  dept d 
+where 
+  e.deptno = d.deptno and 
+  d.loc = 'DALLAS';
+
+6
+select 
+  e.ename as Employee, 
+  e.empno as "Emp#", 
+  m.ename as Manager, 
+  m.empno as "Mgr#" 
+from 
+  emp e, 
+  emp m 
+where 
+  e.mgr = m.empno;
+
+7
+select 
+  e.ename as Employee, 
+  e.empno as "Emp#", 
+  m.ename as Manager, 
+  m.empno as "Mgr#" 
+from 
+  emp e, 
+  emp m 
+where 
+  e.mgr = m.empno(+);
+
+8
+select 
+  d.deptno as department, 
+  e.ename as employee, 
+  c.ename as colleage 
+from 
+  emp e, 
+  emp c, 
+  dept d 
+where 
+  e.deptno = d.deptno and
+  e.deptno = c.deptno
+order by
+  d.deptno, 
+  e.empno;
+
+9
+desc 
+  salgrade;
+
+select 
+  e.ename, 
+  e.job, 
+  d.dname, 
+  e.sal, 
+  s.grade 
+from 
+  emp e, 
+  dept d, 
+  salgrade s 
+where 
+  e.deptno = d.deptno and 
+  e.sal between s.losal and s.hisal
+order by
+  d.dname;
+
+10
+select 
+  e.ename, 
+  e.hiredate 
+from 
+  emp e, 
+  emp b 
+where 
+  e.hiredate > b.hiredate and 
+  lower(b.ename) = 'blake';
+
+11
+select 
+  e.ename as "Employee", 
+  e.hiredate as "Emp Hiredate", 
+  m.ename as "Manager", 
+  m.hiredate as "Mgr Hiredate" 
+from 
+  emp e, 
+  emp m 
+where 
+  e.mgr = m.empno and 
+  e.hiredate < m.hiredate;
+
+12
+select 
+  ename || ' ' || lpad('*', sal / 100, '*') as employee_and_their_salaries 
+from 
+  emp
+order by 
+  sal desc;

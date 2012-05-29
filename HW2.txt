@@ -1,0 +1,51 @@
+1
+
+select sysdate as "Date" from sys.dual;
+/
+
+2+3
+
+select empno, ename, sal, round(sal*1.15) "New Salary" from emp;
+/
+
+4
+
+select empno, ename, sal, round(sal*1.15) "New Salary", round(sal*1.15)-sal Increase from emp;
+/
+
+5
+
+--Monday, the Twenty-Fourth of May, 1982
+
+select ename, hiredate, to_char(next_day(add_months(hiredate, 6), 'Monday'), 'Day, "the" Ddspth "of" Month, YYYY') as "REVIEW" from emp;
+/
+
+6
+
+select ename, round(months_between(sysdate, hiredate)) as months_worked from emp order by months_worked;
+/
+
+7
+
+select ename||' earns '||to_char(sal, '$999,999.99')||' monthly but wants '||to_char(sal*3, '$999,999.99')||'.' as "Dream Salaries" from emp;
+/
+
+8
+
+select ename, lpad(sal, 15, '$') salary from emp;
+/
+
+9
+
+select initcap(ename) as Name, length(ename) as "Length" from emp where ename like 'J%' or ename like 'A%' or ename like 'M%';
+/
+
+10
+
+select ename, hiredate, to_char(hiredate, 'DAY') as "DAY" from emp order by mod(to_number(to_char(hiredate, 'D'))+5, 7) asc;
+/
+
+11
+
+select ename, nvl(to_char(comm), 'No Commission') as "COMM" from emp;
+/

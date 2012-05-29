@@ -1,0 +1,750 @@
+CREAREA BAZEI DE DATE
+=====================
+
+-- ma asigur sa nu am tabelul deja creat
+DROP TABLE teachers;
+
+-- creez tabelul cu profesori
+CREATE TABLE teachers 
+(
+	-- identificatorul unic cu cheie primara
+	id NUMBER( 4 ) CONSTRAINT teachers_id_pk PRIMARY KEY, 
+
+	-- numele
+	name VARCHAR2( 32 ) NOT NULL
+);
+
+-- ma asigur sa nu am tabelul deja creat
+DROP TABLE students;
+
+-- creez tabelul cu elevi
+CREATE TABLE students
+(
+	-- identificatorul unic cu cheie primara
+	id NUMBER( 4 ) CONSTRAINT students_id_pk PRIMARY KEY, 
+
+	-- numele
+	name VARCHAR2( 32 ) NOT NULL, 
+
+	-- identificatorul unic al profesorului care l-a pregatit, daca exista, cu cheie externa
+	teacher_id NUMBER(4) NULL CONSTRAINT students_teacherid_fk REFERENCES teachers(id) ON DELETE SET NULL
+);
+
+-- ma asigur sa nu am tabelul deja creat
+DROP TABLE groups;
+
+-- creez tabelul cu grupe de varsta
+CREATE TABLE groups
+(
+	-- identificatorul unic cu cheie primara
+	id NUMBER( 4 ) 	CONSTRAINT groups_id_pk	PRIMARY KEY 
+);
+
+-- ma asigur sa nu am tabelul deja creat
+DROP TABLE problems;
+
+-- creez tabelul probleme
+CREATE TABLE problems
+(
+	-- identificatorul unic
+	id 		NUMBER( 4 ) NOT NULL, 
+
+	-- numele
+	name 		VARCHAR2( 32 ) NOT NULL, 
+
+	-- grupa de varsta
+	group_id	NUMBER( 4) CONSTRAINT problems_groupid_fk REFERENCES groups( id ) ON DELETE CASCADE,
+
+	-- cheie primara pe doua coloane
+	CONSTRAINT problems_pk PRIMARY KEY (id, group_id)
+);
+
+-- ma asigur sa nu am tabelul deja creat
+DROP TABLE solutions;
+
+-- creez tabelul cu solutii
+CREATE TABLE solutions
+(
+	-- identificatorul problemei
+	problem_id		NUMBER( 4 )	NOT NULL,
+
+	-- grupa de pregatire a problemei
+	problem_group_id	NUMBER( 4 )	NOT NULL,
+
+	-- identificatorul elevului, cu cheie externa
+	student_id		NUMBER( 4 )	NOT NULL CONSTRAINT solutions_studentid_fk REFERENCES students(id) ON DELETE CASCADE,
+
+	-- identificatorul profesorului care a corectat, initial nul, cu cheie externa
+	grader_id		NUMBER( 4 )	NULL CONSTRAINT solutions_graderid_fk REFERENCES teachers(id) ON DELETE SET NULL,
+
+	-- punctajul dat, initial 0
+	score			NUMBER( 4 )	DEFAULT 0 NOT NULL,
+
+	-- momentul de adaugare
+	moment			DATE		NOT NULL,
+
+	-- cheie primara pe doua coloane
+	CONSTRAINT solutions_pk PRIMARY KEY (problem_id, problem_group_id, student_id),
+
+	-- cheie externa spre problema
+	CONSTRAINT solutions_problem_fk FOREIGN KEY (problem_id, problem_group_id) REFERENCES problems(id, group_id) ON DELETE CASCADE
+)
+
+
+
+
+
+-- inserez grupa de varsta mica
+INSERT 
+INTO groups 
+VALUES(1);
+
+-- inserez grupa de varsta medie
+INSERT 
+INTO groups 
+VALUES(2);
+
+-- inserez grupa de varsta mare
+INSERT 
+INTO groups 
+VALUES(3);
+
+-- vad structura problemelor pentru a pune campurile in ordine
+desc problems;
+
+-- inserez problema 1 la grupa mica
+INSERT 
+INTO problems 
+VALUES(1, 'mica1', 1);
+
+-- inserez problema 2 la grupa mica
+INSERT 
+INTO problems 
+VALUES(2, 'mica2', 1);
+
+-- inserez problema 3 la grupa medie
+INSERT 
+INTO problems 
+VALUES(3, 'medie1', 2);
+
+-- inserez problema 4 la grupa medie
+INSERT 
+INTO problems 
+VALUES(4, 'medie2', 2);
+
+-- inserez problema 5 la grupa medie
+INSERT INTO problems VALUES(5, 'mare1', 3);
+
+-- inserez problema 6 la grupa medie
+INSERT 
+INTO problems 
+VALUES(6, 'mare2', 3);
+
+-- vad ca toate problemele sunt OK
+SELECT * 
+FROM problems;
+
+-- vad structura profesorilor pentru a pune 3 profesori
+DESC teachers;
+
+-- inserez profesorul 1, nerecomandat 1NF
+INSERT 
+INTO teachers 
+VALUES(1, 'Sergiu Corlat');
+
+-- inserez profesorul 2
+INSERT 
+INTO teachers 
+VALUES(2, 'Nistor Mot');
+
+-- inserez profesorul 3
+INSERT INTO teachers VALUES(3, 'Marinel Serban');
+
+-- vad ca toti profesorii sunt OK
+SELECT * 
+FROM teachers;
+
+-- vad structura elevilor pentru a pune campurile in ordinea lor
+DESC students;
+
+-- pun un elev cu profesorul 1
+INSERT 
+INTO students 
+VALUES(1, 'Codrin Ditu', 1);
+
+-- pun un elev fara profesor
+INSERT 
+INTO students 
+VALUES(2, 'Codrut Burdujoc', NULL);
+
+-- pun un elev cu profesorul 3
+INSERT 
+INTO students 
+VALUES(3, 'Vlad Manea', 3);
+
+-- mai pun un elev cu profesorul 3
+INSERT 
+INTO students 
+VALUES(4, 'Razvan Milea', 3);
+
+-- vad ca toti elevii sunt OK
+SELECT * 
+FROM students;
+
+
+
+
+
+/* inscrie un elev fara profesor */
+
+DECLARE
+
+	-- declar variabilele
+	v_id students.id%TYPE := 5;
+	v_name students.name%TYPE := 'Sebastian Ditu';
+	v_teacher_id teachers.id%TYPE := NULL;
+	v_exists NUMBER := 0;
+
+	-- declar exceptiile mele
+	e_invalid_id EXCEPTION;
+	e_invalid_name EXCEPTION;
+	e_invalid_teacher_id EXCEPTION;
+
+BEGIN
+
+	-- verific identificatorul elevului
+	IF v_id IS NULL THEN
+		RAISE e_invalid_id;
+	END IF;
+
+	-- verific numele elevului
+	IF v_name IS NULL THEN
+		RAISE e_invalid_name;
+	END IF;
+
+	-- verific identificatorul profesorului
+	IF v_teacher_id IS NOT NULL THEN
+
+		-- trebuie sa existe profesorul
+		SELECT COUNT(*)
+		INTO v_exists
+		FROM teachers
+		WHERE id = v_teacher_id;
+
+		-- verific existenta identificatorului profesorului
+		IF v_exists = 0 THEN
+			RAISE e_invalid_teacher_id;
+		END IF;		
+
+	END IF;
+
+	-- trebuie sa NU existe elevul
+	SELECT COUNT(*)
+	INTO v_exists
+	FROM students
+	WHERE id = v_id;
+
+	-- verific inexistenta altui elev cu acelasi id
+	IF v_exists > 0 THEN
+		RAISE e_invalid_id;
+	END IF;		
+
+	-- daca s-a ajuns aici, profesorul este valid sau nul, studentul este valid si inserez
+	INSERT 
+	INTO students 
+	VALUES(v_id, v_name, v_teacher_id);
+
+	-- daca a reusit, finalizeaza tranzactia
+	COMMIT;
+
+EXCEPTION
+
+	-- s-a ajuns aici din cauza ca identificatorul este invalid
+	WHEN e_invalid_id THEN
+		DBMS_OUTPUT.PUT_LINE('Elevul are un identificator invalid!');
+
+	-- s-a ajuns aici din cauza ca numele este invalid
+	WHEN e_invalid_name THEN
+		DBMS_OUTPUT.PUT_LINE('Elevul are un nume invalid!');
+
+	-- s-a ajuns aici din cauza ca identificatorul profesorului, desi specificat, este invalid
+	WHEN e_invalid_teacher_id THEN
+		DBMS_OUTPUT.PUT_LINE('Elevul are un profesor cu identificator invalid!');
+
+	-- s-a ajuns aici din cauza ca s-a creat intre timp un elev! (concurenta!)
+	WHEN DUP_VAL_ON_INDEX THEN
+		DBMS_OUTPUT.PUT_LINE('Elevul are un identificator invalid!');
+
+	-- oricare alte exceptii, caz default
+	WHEN OTHERS THEN
+		DBMS_OUTPUT.PUT_LINE(TO_CHAR(SQLCODE) || ' ' || TO_CHAR(SQLERRM));
+
+END;
+
+
+
+
+
+
+
+
+
+/* un elev a terminat o problema si vrea sa o predea */
+
+DECLARE
+
+	-- declar variabilele
+	v_student_id solutions.student_id%TYPE := 3;
+	v_problem_id solutions.problem_id%TYPE := 3;
+	v_problem_group_id solutions.problem_group_id%TYPE := 2;
+	v_score solutions.score%TYPE := 0;
+	v_moment solutions.moment%TYPE := TO_DATE('18-jan-2010', 'dd-mon-yyyy');
+	v_exists NUMBER := 0;
+
+	-- declar exceptiile
+	e_invalid_student_id EXCEPTION;
+	e_invalid_problem_id EXCEPTION;
+	e_invalid_group_id EXCEPTION;
+	e_invalid_score EXCEPTION;
+
+BEGIN
+
+	-- verific identificatorul elevului
+	IF v_student_id IS NULL THEN
+		RAISE e_invalid_student_id;
+	END IF;
+
+	-- verific existenta elevului
+	SELECT COUNT(*)
+	INTO v_exists
+	FROM students
+	WHERE id = v_student_id;
+
+	-- trebuie sa existe elevul
+	IF v_exists = 0 THEN
+		RAISE e_invalid_student_id;
+	END IF;
+
+	-- verific identificatorul grupei de varsta
+	IF v_problem_group_id IS NULL THEN
+		RAISE e_invalid_group_id;
+	END IF;
+	
+	-- verific existenta grupei de varsta
+	SELECT COUNT(*)
+	INTO v_exists
+	FROM groups
+	WHERE id = v_problem_group_id;
+
+	-- trebuie sa existe grupa de varsta
+	IF v_exists = 0 THEN
+		RAISE e_invalid_group_id;
+	END IF;
+
+	-- verific identificatorul problemei
+	IF v_problem_id IS NULL THEN
+		RAISE e_invalid_problem_id;
+	END IF;
+
+	-- verific existenta grupei de varsta
+	SELECT COUNT(*)
+	INTO v_exists
+	FROM problems
+	WHERE id = v_problem_id AND group_id = v_problem_group_id;
+
+	-- trebuie sa existe grupa de varsta
+	IF v_exists = 0 THEN
+		RAISE e_invalid_problem_id;
+	END IF;
+	
+	-- verific sa nu fie deja pusa nota pe lucrare (frauda?!)
+	IF v_score IS NULL OR v_score IS NOT NULL AND v_score > 0 THEN
+		RAISE e_invalid_score;
+	END IF;
+
+	-- inserez solutia
+	INSERT 
+	INTO solutions
+	VALUES (v_problem_id, v_problem_group_id, v_student_id, NULL, v_score, TO_DATE(SYSDATE(), 'dd-mon-yyyy'));
+
+	-- daca a reusit, finalizeaza tranzactia
+	COMMIT;
+
+EXCEPTION
+
+	WHEN e_invalid_student_id THEN
+		-- s-a ajuns aici din cauza ca identificatorul elevului este invalid
+		DBMS_OUTPUT.PUT_LINE('Elevul are un identificator invalid!');
+
+	WHEN e_invalid_problem_id THEN
+		-- s-a ajuns aici din cauza ca identificatorul problemei este invalid
+		DBMS_OUTPUT.PUT_LINE('Problema are un identificator invalid!');
+
+	WHEN e_invalid_group_id THEN
+		-- s-a ajuns aici din cauza ca identificatorul grupei de varsta este invalid
+		DBMS_OUTPUT.PUT_LINE('Grupa are un identificator invalid!');
+
+	WHEN e_invalid_score THEN
+		-- s-a ajuns aici din cauza ca scorul elevului este invalid
+		DBMS_OUTPUT.PUT_LINE('Scorul este invalid!');
+
+	-- s-a ajuns aici din cauza ca altcineva a dat solutia (concurenta!, frauda?!)
+	WHEN DUP_VAL_ON_INDEX THEN
+		DBMS_OUTPUT.PUT_LINE('Solutia are un identificator invalid!');
+
+	-- oricare alte exceptii, caz default
+	WHEN OTHERS THEN
+		DBMS_OUTPUT.PUT_LINE(TO_CHAR(SQLCODE) || ' ' || TO_CHAR(SQLERRM));
+
+END;
+
+
+
+
+
+
+
+/* o lucrare este descalificata, cu eliminarea elevului din concurs */
+
+DECLARE
+
+	-- declar variabilele
+	v_problem_id solutions.problem_id%TYPE := 3;
+	v_problem_group_id solutions.problem_group_id%TYPE := 2;
+	v_student_id solutions.student_id%TYPE := 3;
+	v_exists NUMBER := 0;
+
+	-- declar exceptiile
+	e_invalid_student_id EXCEPTION;
+	e_invalid_problem_id EXCEPTION;
+	e_invalid_group_id EXCEPTION;
+
+BEGIN
+
+	-- verific identificatorul elevului
+	IF v_student_id IS NULL THEN
+		RAISE e_invalid_student_id;
+	END IF;
+
+	-- verific existenta elevului
+	SELECT COUNT(*)
+	INTO v_exists
+	FROM students
+	WHERE id = v_student_id;
+
+	-- trebuie sa existe elevul
+	IF v_exists = 0 THEN
+		RAISE e_invalid_student_id;
+	END IF;
+
+	-- verific identificatorul grupei de varsta
+	IF v_problem_group_id IS NULL THEN
+		RAISE e_invalid_group_id;
+	END IF;
+	
+	-- verific existenta grupei de varsta
+	SELECT COUNT(*)
+	INTO v_exists
+	FROM groups
+	WHERE id = v_problem_group_id;
+
+	-- trebuie sa existe grupa de varsta
+	IF v_exists = 0 THEN
+		RAISE e_invalid_group_id;
+	END IF;
+
+	-- verific identificatorul problemei
+	IF v_problem_id IS NULL THEN
+		RAISE e_invalid_problem_id;
+	END IF;
+
+	-- verific existenta grupei de varsta
+	SELECT COUNT(*)
+	INTO v_exists
+	FROM problems
+	WHERE id = v_problem_id AND group_id = v_problem_group_id;
+
+	-- trebuie sa existe grupa de varsta
+	IF v_exists = 0 THEN
+		RAISE e_invalid_problem_id;
+	END IF;
+
+	-- sterg elevul cu totul
+	DELETE 
+	FROM students
+	WHERE id = v_student_id;
+
+	-- scriu cate randuri au fost sterse
+	DBMS_OUTPUT.PUT_LINE(TO_CHAR(SQL%ROWCOUNT) || ' randuri sterse.');
+
+	-- daca a reusit, finalizeaza tranzactia
+	COMMIT;
+
+EXCEPTION
+
+	WHEN e_invalid_student_id THEN
+		-- s-a ajuns aici din cauza ca identificatorul elevului este invalid
+		DBMS_OUTPUT.PUT_LINE('Elevul are un identificator invalid!');
+
+	WHEN e_invalid_problem_id THEN
+		-- s-a ajuns aici din cauza ca identificatorul problemei este invalid
+		DBMS_OUTPUT.PUT_LINE('Problema are un identificator invalid!');
+
+	WHEN e_invalid_group_id THEN
+		-- s-a ajuns aici din cauza ca identificatorul grupei de varsta este invalid
+		DBMS_OUTPUT.PUT_LINE('Grupa are un identificator invalid!');
+
+	-- oricare alte exceptii, caz default
+	WHEN OTHERS THEN
+		DBMS_OUTPUT.PUT_LINE(TO_CHAR(SQLCODE) || ' ' || TO_CHAR(SQLERRM));
+
+END;
+
+
+
+/* lista grupelor si apoi, separat, lista problemelor din fiecare grupa */
+
+DECLARE
+
+	-- declar cursorul
+	CURSOR c_groups IS
+		SELECT id
+		FROM groups;
+
+	-- declar variabila in care retin identificatorul
+	v_group_id groups.id%TYPE;
+
+BEGIN
+
+	-- deschid cursorul
+	IF NOT c_groups%ISOPEN THEN 
+		OPEN c_groups;
+	END IF;
+
+	LOOP
+		
+		-- extrag din cursor date
+		FETCH c_groups INTO v_group_id;
+
+		-- pun conditia de iesire cand e gata
+		EXIT WHEN c_groups%NOTFOUND;
+	
+		-- scriu randul curent
+		DBMS_OUTPUT.PUT_LINE(TO_CHAR(v_group_id));	
+
+		-- creez un bloc pentru problemele din acel grup
+		DECLARE
+
+			-- declar un record care retine tot randul pentru problema		
+			v_problem problems%ROWTYPE;
+
+			-- declar un cursor cu parametru
+			CURSOR c_problems (p_group_id problems.group_id%TYPE) IS
+				SELECT * 
+				FROM problems
+				WHERE group_id = p_group_id;
+
+		BEGIN
+
+			-- parcurg toate problemele din grupul meu
+			FOR v_problem IN c_problems (v_group_id)
+			LOOP
+
+				-- scriu problema curenta
+				DBMS_OUTPUT.PUT_LINE(TO_CHAR(v_problem.id) || ' ' || v_problem.name || ' ' || TO_CHAR(v_problem.group_id));	
+
+			END LOOP;
+
+		END;
+
+	END LOOP;
+
+	-- inchid cursorul
+	CLOSE c_groups;	
+
+END;
+
+/* se termina concursul, adaug solutiile elevilor */
+
+/* vad elevii */
+SELECT *
+FROM students;
+
+/* inserez solutiile trimise de primul elev */
+INSERT INTO solutions VALUES (1, 1, 1, 1, 100, TO_DATE(SYSDATE, 'dd-mon-yy'));
+INSERT INTO solutions VALUES (2, 1, 1, 2, 90, TO_DATE(SYSDATE, 'dd-mon-yy'));
+INSERT INTO solutions VALUES (3, 2, 1, 1, 10, TO_DATE(SYSDATE, 'dd-mon-yy'));
+INSERT INTO solutions VALUES (4, 2, 1, 3, 65, TO_DATE(SYSDATE, 'dd-mon-yy'));
+INSERT INTO solutions VALUES (5, 3, 1, 3, 55, TO_DATE(SYSDATE, 'dd-mon-yy'));
+INSERT INTO solutions VALUES (6, 3, 1, 2, 30, TO_DATE(SYSDATE, 'dd-mon-yy'));
+
+/* inserez solutiile trimise de al doilea elev */
+INSERT INTO solutions VALUES (1, 1, 2, 1, 95, TO_DATE(SYSDATE, 'dd-mon-yy'));
+INSERT INTO solutions VALUES (2, 1, 2, 3, 80, TO_DATE(SYSDATE, 'dd-mon-yy'));
+INSERT INTO solutions VALUES (3, 2, 2, 1, 90, TO_DATE(SYSDATE, 'dd-mon-yy'));
+
+/* inserez solutiile trimise de al patrulea elev */
+INSERT INTO solutions VALUES (1, 1, 4, 1, 90, TO_DATE(SYSDATE, 'dd-mon-yy'));
+INSERT INTO solutions VALUES (2, 1, 4, 3, 100, TO_DATE(SYSDATE, 'dd-mon-yy'));
+INSERT INTO solutions VALUES (5, 3, 4, 2, 100, TO_DATE(SYSDATE, 'dd-mon-yy'));
+
+/* inserez solutia trimisa de al cincilea elev */
+INSERT INTO solutions VALUES (1, 1, 5, 1, 70, TO_DATE(SYSDATE, 'dd-mon-yy'));
+
+
+
+/* s-a observat ca trebuie ca sursele corectate de profesorii elevilor trebuie recorectate de alti profesori */
+
+DECLARE
+
+	-- declar cursorul cu for update
+	CURSOR c_solutions IS
+		SELECT s.student_id, s.problem_id, s.problem_group_id, s.grader_id 
+		FROM solutions s
+		WHERE s.grader_id IS NOT NULL AND EXISTS(SELECT 1 
+							 FROM students t 
+							 WHERE t.id = s.student_id AND t.teacher_id IS NOT NULL AND t.teacher_id = s.grader_id) FOR UPDATE OF s.grader_id;
+
+	-- declar un record pentru a retine intrarile din cursor
+	TYPE c_solution IS RECORD
+	(
+		student_id solutions.student_id%TYPE,
+		problem_id solutions.problem_id%TYPE,
+		problem_group_id solutions.problem_group_id%TYPE,
+		grader_id solutions.grader_id%TYPE
+	);
+
+	-- declar o variabila de tip record
+	v_solution c_solution;
+
+	-- declar o variabila de existenta
+	v_replacement teachers.id%TYPE;
+
+BEGIN
+
+	-- deschid cursorul
+	IF NOT c_solutions%ISOPEN THEN 
+		OPEN c_solutions;
+	END IF;
+
+	LOOP
+		
+		-- extrag din cursor date
+		FETCH c_solutions INTO v_solution;
+
+		-- pun conditia de iesire cand e gata
+		EXIT WHEN c_solutions%NOTFOUND;
+
+		-- fac bloc imbricat
+		BEGIN
+		
+			-- caut un profesor diferit de cel in cauza 
+			SELECT MAX(id)
+			INTO v_replacement
+			FROM teachers
+			WHERE id <> v_solution.grader_id;
+
+			-- pun acel prof
+			UPDATE solutions 
+			SET grader_id = v_replacement 
+			WHERE CURRENT OF c_solutions;
+			
+		EXCEPTION
+
+			-- cazul cand nu exista un astfel de profesor
+			WHEN NO_DATA_FOUND THEN
+	
+				-- pun null la grader
+				UPDATE solutions 
+				SET grader_id = NULL 
+				WHERE CURRENT OF c_solutions;
+
+			-- oricare alte exceptii, caz default
+			WHEN OTHERS THEN
+				DBMS_OUTPUT.PUT_LINE(TO_CHAR(SQLCODE) || ' ' || TO_CHAR(SQLERRM));
+
+		END;
+	
+		-- scriu randul curent
+		DBMS_OUTPUT.PUT_LINE(TO_CHAR(v_solution.student_id) || ' ' || TO_CHAR(v_solution.problem_id) || ' ' || TO_CHAR(v_solution.problem_group_id) || ' ' || TO_CHAR(v_solution.grader_id));
+
+	END LOOP;
+
+	-- inchid cursorul
+	CLOSE c_solutions;	
+
+END;
+
+/* afisez pentru fiecare grupa castigatorul absolut si profesorul sau sau exceptie, daca el acesta nu exista! */
+
+DECLARE
+
+	-- declar cursorul de grupe
+	CURSOR c_groups IS
+		SELECT id
+		FROM groups
+		ORDER BY id;
+
+BEGIN
+
+	-- deschid cursorul de grupe
+	FOR v_group IN c_groups
+	LOOP
+
+		DBMS_OUTPUT.PUT_LINE(TO_CHAR(v_group.id));
+
+		-- fac bloc imbricat cu exceptie
+		DECLARE
+
+			-- declar un record pentru a retine intrarile din cursor
+			TYPE c_student IS RECORD
+			(
+				student_id students.id%TYPE,
+				student_name students.name%type,
+				teacher_id teachers.id%TYPE,
+				teacher_name teachers.name%TYPE
+			);
+
+			-- declar o variabila de tip record
+			v_student c_student;
+
+		BEGIN
+
+			SELECT s.id, s.name, t.id, t.name 
+			INTO v_student
+			FROM students s, teachers t
+			WHERE s.teacher_id = t.id(+) AND
+			(
+				SELECT SUM(l.score)
+				FROM solutions l
+				WHERE l.problem_group_id = v_group.id AND l.student_id = s.id
+			)
+			>
+			(
+				SELECT MAX(SUM(l.score))
+				FROM solutions l
+				WHERE l.problem_group_id = v_group.id AND l.student_id <> s.id
+				GROUP BY l.student_id
+			);
+
+			-- am ajuns aici, pot sa il afisez
+			DBMS_OUTPUT.PUT_LINE(TO_CHAR(v_student.student_id) || ' ' || v_student.student_name || ' ' || TO_CHAR(v_student.teacher_id) || ' ' || v_student.teacher_name);
+
+		EXCEPTION
+
+			-- cazul cand nu exista un astfel de elev
+			WHEN NO_DATA_FOUND THEN
+
+				-- scriu ca nu am castigator absolut
+				DBMS_OUTPUT.PUT_LINE('La grupa ' || TO_CHAR(v_group.id) || ' nu exista castigator absolut');	
+
+			-- oricare alte exceptii, caz default
+			WHEN OTHERS THEN
+				DBMS_OUTPUT.PUT_LINE(TO_CHAR(SQLCODE) || ' ' || TO_CHAR(SQLERRM));
+
+		END; 
+
+	END LOOP;
+
+END;
+
